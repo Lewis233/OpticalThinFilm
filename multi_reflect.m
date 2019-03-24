@@ -1,4 +1,4 @@
-function R = multi_reflect(material,lambs,lambe,dlamb,layers,d)
+function [R,h] = multi_reflect(material,lambs,lambe,dlamb,layers,d)
 datum = preread();%test:multi_reflect({'TiSi2' 'W' 'Pt'},380,780,2,3,[1 2 3])
 if lambs<lambe && dlamb<(lambe-lambs)
     h = lambs:dlamb:lambe;
@@ -15,7 +15,7 @@ if lambs<lambe && dlamb<(lambe-lambs)
         r = (yita0-Y)/(yita0+Y);
         R(a) = r*conj(r);
     end
-    plot(h,R);
+%     plot(h,R);
 end
         
 function res = raw_result(material,lambda,layers,d,datum)
@@ -39,7 +39,7 @@ for j = 1:layers
     uv(j+1) = (n(j+1)-1i*k(j+1))*cos(theta(j+1));
     yita(j+1) = (n(j+1)-1i*k(j+1))/cos(theta(j+1));
     if j < layers
-        delta(j)=2*pi/lambda*uv(j)*d(j);
+        delta(j)=2*pi/lambda*uv(j)*cell2mat(d(j));
     end
 end
 result = [1 0;0 1];
