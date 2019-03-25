@@ -1,24 +1,30 @@
-function [R,h] = multi_reflect(material,lambs,lambe,dlamb,layers,d)
-datum = preread();%test:multi_reflect({'TiSi2' 'W' 'Pt'},380,780,2,3,[1 2 3])
+function [h,R,T] = multi_reflect(material,lambs,lambe,dlamb,layers,d,datum,polar)%remove datum
+% datum = preread();%test:multi_reflect({'TiSi2' 'W' 'Pt'},380,780,2,3,[1 2 3],true)
 if lambs<lambe && dlamb<(lambe-lambs)
     h = lambs:dlamb:lambe;
     R = zeros(1,size(h,1));
     a = 0;
     for j = lambs:dlamb:lambe
         a = a + 1;
-        A=raw_result(material,j,layers,d,datum);
+        A=raw_result(material,j,layers,d,datum,polar);
         B=A(1);
         C=A(2);
         yita0=A(3);
         yitas=A(4);
         Y = C/B;
         r = (yita0-Y)/(yita0+Y);
-        R(a) = r*conj(r);
+        R(a) = abs(r)^2;
+        if imag(r)~=0
+            ksai = abs(real(yitas)*conj(Y)/real(Y)/B/conj(C));
+            T = (1-R)*ksai;
+        else
+            T = 1-R;
+        end
     end
 %     plot(h,R);
 end
         
-function res = raw_result(material,lambda,layers,d,datum)
+function res = raw_result(material,lambda,layers,d,datum,polar)
 n = zeros(layers+1,1);
 k = zeros(layers+1,1);
 theta = zeros(layers+1,1);
@@ -29,15 +35,22 @@ n(1) = 1.000292;
 k(1) = 0;
 theta(1) = 60*pi/180;
 uv(1) = n(1)*cos(theta(1));
-yita(1) = (n(1)-1i*k(1))/cos(theta(1));
-
+if polar == true
+    yita(1) = (n(1)-1i*k(1))/cos(theta(1));
+else
+    yita(1) = (n(1)-1i*k(1))*cos(theta(1));
+end
 for j = 1:layers
     data = cell2mat(datum(trans(char(material(j)))));
     n(j+1) = interp1(data(:,1),data(:,2),lambda,'linear');
     k(j+1) = interp1(data(:,1),data(:,3),lambda,'linear');
     theta(j+1) = asin(n(j)*sin(theta(j))/(n(j+1)-1i*k(j+1)));
     uv(j+1) = (n(j+1)-1i*k(j+1))*cos(theta(j+1));
-    yita(j+1) = (n(j+1)-1i*k(j+1))/cos(theta(j+1));
+    if polar
+        yita(j+1) = (n(j+1)-1i*k(j+1))/cos(theta(j+1));
+    else
+        yita(j+1) = (n(j+1)-1i*k(j+1))*cos(theta(j+1));
+    end
     if j < layers
         delta(j)=2*pi/lambda*uv(j)*cell2mat(d(j));
     end
